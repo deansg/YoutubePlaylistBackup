@@ -11,9 +11,12 @@ namespace YoutubePlaylistBackup.Core
 {
     public class YoutubePlaylistWriter
     {
+        public const string PlaylistAPI = "https://www.googleapis.com/youtube/v3/playlistItems/";
+
         private readonly string _folderPath;
         private readonly string _playlistName;
         private readonly string _playlistId;
+        private readonly string _youtubeAuthKey;
 
         public readonly string NewVersionPath;
         public readonly string OldVersionPath;
@@ -21,10 +24,12 @@ namespace YoutubePlaylistBackup.Core
         public readonly string DiffBackupPath;
         public readonly string OldVersionBackupPath;
 
-        public YoutubePlaylistWriter(string folderPath, string playlistId, string playlistName)
+        public YoutubePlaylistWriter(string folderPath, string playlistId, string playlistName, string youtubeAuthKey)
         {
             _folderPath = folderPath;
             _playlistName = playlistName;
+            _playlistId = playlistId;
+            _youtubeAuthKey = youtubeAuthKey;
 
             NewVersionPath = $"{_folderPath}Youtube{_playlistName}AutomatedNew.txt";
             OldVersionPath = $"{_folderPath}Youtube{_playlistName}Automated.txt";
@@ -98,11 +103,8 @@ namespace YoutubePlaylistBackup.Core
 
         private string GetRequestUrl(string nextPage = null)
         {
-            const string playlistAPI = "https://www.googleapis.com/youtube/v3/playlistItems/";
-            const string partParam = "part=snippet";
-            const string authKey = "AIzaSyDFoDm8QZMxexfEPbtLtJqn-9Bhak7B_yo";
             string nextPagePart = string.IsNullOrEmpty(nextPage) ? string.Empty : "&pageToken=" + nextPage;
-            return $"{playlistAPI}?{partParam}&maxResults=50&playlistId={_playlistId}&key={authKey}{nextPagePart}";
+            return $"{PlaylistAPI}?part=snippet&maxResults=50&playlistId={_playlistId}&key={_youtubeAuthKey}{nextPagePart}";
         }
 
         private IReadOnlyList<string> GetPlaylistTitlesFromFile(string filePath)
