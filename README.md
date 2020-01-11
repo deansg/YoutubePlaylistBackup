@@ -1,4 +1,5 @@
 # YoutubePlaylistBackup
+## *** THIS IS STILL IN DEVELOPMENT, WILL BE DONE SOON ***
 A CLI for backing up YouTube playlist video names to a text file, used in case videos change/get deleted
 
 Usage:
