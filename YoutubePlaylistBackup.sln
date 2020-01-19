@@ -3,7 +3,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.29102.190
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "YoutubePlaylistBackup.Core", "YoutubePlaylistBackup.Core\YoutubePlaylistBackup.Core.csproj", "{18C022AF-7C57-4472-A4D5-7CC1B9C6714B}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "YoutubePlaylistBackup.Core", "YoutubePlaylistBackup.Core\YoutubePlaylistBackup.Core.csproj", "{18C022AF-7C57-4472-A4D5-7CC1B9C6714B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "YoutubePlaylistBackup.CLI", "YoutubePlaylistBackup.CLI\YoutubePlaylistBackup.CLI.csproj", "{8DFE9A92-260C-45DB-BE8C-21B0C7FF0F62}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -15,6 +17,10 @@ Global
 		{18C022AF-7C57-4472-A4D5-7CC1B9C6714B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{18C022AF-7C57-4472-A4D5-7CC1B9C6714B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{18C022AF-7C57-4472-A4D5-7CC1B9C6714B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8DFE9A92-260C-45DB-BE8C-21B0C7FF0F62}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8DFE9A92-260C-45DB-BE8C-21B0C7FF0F62}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8DFE9A92-260C-45DB-BE8C-21B0C7FF0F62}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8DFE9A92-260C-45DB-BE8C-21B0C7FF0F62}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

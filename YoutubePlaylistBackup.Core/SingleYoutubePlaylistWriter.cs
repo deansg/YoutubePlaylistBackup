@@ -1,0 +1,186 @@
+﻿using Newtonsoft.Json;
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Net.Http;
+using System.Threading;
+
+namespace YoutubePlaylistBackup.Core
+{
+    public class SingleYoutubePlaylistWriter
+    {
+        public const string PlaylistAPI = "https://www.googleapis.com/youtube/v3/playlistItems/";
+
+        private readonly string _outputFilePrefix;
+        private readonly string _youtubeAuthKey;
+        private readonly string _playlistName;
+        private readonly string _playlistId;
+        private readonly HttpClient _httpClient;
+        private readonly string _newVersionPath;
+        private readonly string _oldVersionPath;
+        private readonly string _diffFilePath;
+        private readonly string _diffBackupPath;
+        private readonly string _oldVersionBackupPath;
+
+        public SingleYoutubePlaylistWriter(string folderPath, string youtubeAuthKey, string playlistId, string playlistName)
+        {
+            if (playlistName == null)
+            {
+                playlistName = playlistId;
+            }
+            _outputFilePrefix = Path.Combine(folderPath, playlistName + "-");
+            _youtubeAuthKey = youtubeAuthKey;
+            _playlistId = playlistId;
+            _playlistName = playlistName;
+
+            _newVersionPath = _outputFilePrefix + "YoutubeAutomatedNew.txt";
+            _oldVersionPath = _outputFilePrefix+ "YoutubeAutomated.txt";
+            _diffFilePath = _outputFilePrefix + "YoutubeAutomatedDiff.txt";
+            _diffBackupPath = _outputFilePrefix+ "YoutubeDiffOld.txt";
+            _oldVersionBackupPath = _outputFilePrefix + "YoutubeOldOld.txt";
+        }
+
+        public void BackupPlaylist()
+        {
+            IReadOnlyList<string> newPlaylistTitles = RetrieveCurrentPlaylistTitles();
+            IReadOnlyList<string> titlesFromFile = GetPlaylistTitlesFromBackup();
+            int lengthDiff = CalculateAndValidateLenghtDiff(newPlaylistTitles, titlesFromFile);
+            WriteBackup(_oldVersionPath, _oldVersionBackupPath, _diffFilePath, _diffBackupPath);
+            OverrideOldFile();
+            WriteNewTitles(_newVersionPath, newPlaylistTitles);
+            WriteDiffFile(newPlaylistTitles, titlesFromFile, lengthDiff);
+        }
+
+        private static void WriteBackup(string oldVersionPath, string oldVersionBackupPath, string diffFilePath,
+            string diffBackupPath)
+        {
+            PrintMsg("Creating backups");
+            if (File.Exists(oldVersionPath))
+                File.Copy(oldVersionPath, oldVersionBackupPath, true);
+            if (File.Exists(diffFilePath))
+                File.Copy(diffFilePath, diffBackupPath, true);
+        }
+
+        private IReadOnlyList<string> RetrieveCurrentPlaylistTitles()
+        {
+            PrintMsg($"Retrieving {_playlistName} titles from YouTube");
+            var titles = new List<string>();
+            Dictionary<string, object> parsed;
+            object nextPage = null;
+            do
+            {
+                Thread.Sleep(200);
+                string reqUrl = GetRequestUrl((string)nextPage);
+                string res = _httpClient.GetStringAsync(reqUrl).Result;
+
+                parsed = JsonConvert.DeserializeObject<Dictionary<string, object>>(res);
+                var items = (ArrayList)parsed["items"];
+                IList<string> curTitles = items.Cast<Dictionary<string, object>>().Select(item =>
+                {
+                    var snippet = (Dictionary<string, object>)item["snippet"];
+                    return (string)snippet["title"];
+                }).ToList();
+
+                if (titles.Count > 0 && curTitles[0] == titles[titles.Count - 1])
+                {
+                    throw new Exception(
+                        $"YouTube API Error: video title number {titles.Count - 1} is the same as the next one: '{curTitles[0]}'");
+                }
+
+                titles.AddRange(curTitles);
+                Console.Write($"\rRetrieved {titles.Count} titles");
+            } while (parsed.TryGetValue("nextPageToken", out nextPage));
+            Console.WriteLine();
+            return titles;
+        }
+
+        private string GetRequestUrl(string nextPage = null)
+        {
+            string nextPagePart = string.IsNullOrEmpty(nextPage) ? string.Empty : "&pageToken=" + nextPage;
+            return $"{PlaylistAPI}?part=snippet&maxResults=50&playlistId={_playlistId}&key={_youtubeAuthKey}{nextPagePart}";
+        }
+
+        private IReadOnlyList<string> GetPlaylistTitlesFromBackup()
+        {
+            if (!File.Exists(_newVersionPath))
+            {
+                return new string[0];
+            }
+            return GetPlaylistTitlesFromFile(_newVersionPath);
+        }
+
+        private IReadOnlyList<string> GetPlaylistTitlesFromFile(string filePath)
+        {
+            PrintMsg($"Retrieving old {_playlistName} titles");
+            return File.ReadAllLines(filePath).
+                Select(str => str.Substring(str.IndexOf(".", StringComparison.Ordinal) + 2)).ToList();
+        }
+
+        private int CalculateAndValidateLenghtDiff(IReadOnlyList<string> newTitles,
+            IReadOnlyList<string> oldTitles)
+        {
+            PrintMsg("Validating new titles and calculating diffs");
+            int num = newTitles.Count - oldTitles.Count;
+            if (num >= 0) return num;
+            CreateMissingVideosFile(oldTitles, newTitles);
+            throw new Exception("Some videos were removed since last time with no update!");
+        }
+
+        public void FindMissingVideos()
+        {
+            IReadOnlyList<string> newTitles = RetrieveCurrentPlaylistTitles();
+            CreateMissingVideosFile(GetPlaylistTitlesFromFile(_oldVersionPath), newTitles);
+        }
+
+        private void CreateMissingVideosFile(IReadOnlyList<string> oldTitles, IReadOnlyList<string> newTitles)
+        {
+            using (StreamWriter streamWriter = new StreamWriter(_outputFilePrefix + "MissingVideos.txt"))
+            {
+                for (int index = 0; index < oldTitles.Count; ++index)
+                {
+                    if (!newTitles.Contains(oldTitles[index]))
+                        streamWriter.WriteLine("{0}. {1}", index + 1, oldTitles[index]);
+                }
+            }
+        }
+
+        private void OverrideOldFile()
+        {
+            File.Copy(_newVersionPath, _oldVersionPath, true);
+        }
+
+        private void WriteNewTitles(string newVersionPath, IReadOnlyList<string> newTitles)
+        {
+            PrintMsg($"Writing new {_playlistName} titles to file");
+            using (var streamWriter = new StreamWriter(newVersionPath))
+            {
+                for (int index = 0; index < newTitles.Count; ++index)
+                    streamWriter.WriteLine("{0}. {1}", index + 1, newTitles[index]);
+            }
+        }
+
+        private void WriteDiffFile(IReadOnlyList<string> newTitles,
+            IReadOnlyList<string> oldTitles, int titlesLengthDiff)
+        {
+            PrintMsg("Writing diff file");
+            using (var streamWriter = new StreamWriter(_diffFilePath))
+            {
+                for (int index = oldTitles.Count - 1; index >= 0; --index)
+                {
+                    string oldTitle = oldTitles[index];
+                    string newTitle = newTitles[index + titlesLengthDiff];
+                    if (oldTitle != newTitle)
+                        streamWriter.WriteLine(
+                            "{0}. Old: {1}. New: {2}", index + 1 + titlesLengthDiff, oldTitle, newTitle);
+                }
+            }
+        }
+
+        private static void PrintMsg(string msg)
+        {
+            Console.WriteLine($"{DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff")}: {msg}");
+        }
+    }
+}
