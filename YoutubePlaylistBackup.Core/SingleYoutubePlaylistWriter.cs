@@ -1,11 +1,8 @@
-﻿using Newtonsoft.Json;
-using System;
-using System.Collections;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
-using System.Threading;
 
 namespace YoutubePlaylistBackup.Core
 {
@@ -22,8 +19,8 @@ namespace YoutubePlaylistBackup.Core
         private readonly string _diffBackupPath;
         private readonly string _oldVersionBackupPath;
 
-        public SingleYoutubePlaylistWriter(string folderPath, string youtubeAuthKey, string playlistId, string playlistName,
-            HttpClient httpClient)
+        public SingleYoutubePlaylistWriter(string folderPath, string youtubeAuthKey, string playlistId,
+            string playlistName, HttpClient httpClient)
         {
             _httpClient = httpClient;
             if (playlistName == null)
@@ -36,9 +33,9 @@ namespace YoutubePlaylistBackup.Core
             _playlistName = playlistName;
 
             _newVersionPath = _outputFilePrefix + "YoutubeBackupNew.txt";
-            _oldVersionPath = _outputFilePrefix+ "YoutubeBackup.txt";
+            _oldVersionPath = _outputFilePrefix + "YoutubeBackup.txt";
             _diffFilePath = _outputFilePrefix + "YoutubeBackupDiff.txt";
-            _diffBackupPath = _outputFilePrefix+ "YoutubeBackupDiffOld.txt";
+            _diffBackupPath = _outputFilePrefix + "YoutubeBackupDiffOld.txt";
             _oldVersionBackupPath = _outputFilePrefix + "YoutubeBackupOld.txt";
         }
 
@@ -118,7 +115,7 @@ namespace YoutubePlaylistBackup.Core
             if (File.Exists(_newVersionPath))
             {
                 File.Copy(_newVersionPath, _oldVersionPath, true);
-            }            
+            }
         }
 
         private void WriteNewTitles(string newVersionPath, IReadOnlyList<string> newTitles)
@@ -131,8 +128,8 @@ namespace YoutubePlaylistBackup.Core
             }
         }
 
-        private void WriteDiffFile(IReadOnlyList<string> newTitles,
-            IReadOnlyList<string> oldTitles, int titlesLengthDiff)
+        private void WriteDiffFile(IReadOnlyList<string> newTitles, IReadOnlyList<string> oldTitles,
+            int titlesLengthDiff)
         {
             PrintMsg("Writing diff file");
             using (var streamWriter = new StreamWriter(_diffFilePath))
@@ -142,8 +139,10 @@ namespace YoutubePlaylistBackup.Core
                     string oldTitle = oldTitles[index];
                     string newTitle = newTitles[index + titlesLengthDiff];
                     if (oldTitle != newTitle)
-                        streamWriter.WriteLine(
-                            "{0}. Old: {1}. New: {2}", index + 1 + titlesLengthDiff, oldTitle, newTitle);
+                    {
+                        streamWriter.WriteLine("{0}. Old: {1}. New: {2}",
+                            index + 1 + titlesLengthDiff, oldTitle, newTitle);
+                    }
                 }
             }
         }
