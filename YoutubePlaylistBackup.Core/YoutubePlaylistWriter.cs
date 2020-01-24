@@ -24,7 +24,7 @@ namespace YoutubePlaylistBackup.Core
 
         public void BackupPlaylist(string playlistId, string playlistName = null)
         {
-            new SingleYoutubePlaylistWriter(_folderPath, _youtubeAuthKey, playlistId, playlistName).BackupPlaylist();
+            new SingleYoutubePlaylistWriter(_folderPath, _youtubeAuthKey, playlistId, playlistName, _httpClient).BackupPlaylist();
         }
 
         public void Dispose()

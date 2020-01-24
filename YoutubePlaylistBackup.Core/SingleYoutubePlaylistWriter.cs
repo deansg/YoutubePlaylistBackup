@@ -11,8 +11,6 @@ namespace YoutubePlaylistBackup.Core
 {
     public class SingleYoutubePlaylistWriter
     {
-        public const string PlaylistAPI = "https://www.googleapis.com/youtube/v3/playlistItems/";
-
         private readonly string _outputFilePrefix;
         private readonly string _youtubeAuthKey;
         private readonly string _playlistName;
@@ -24,8 +22,10 @@ namespace YoutubePlaylistBackup.Core
         private readonly string _diffBackupPath;
         private readonly string _oldVersionBackupPath;
 
-        public SingleYoutubePlaylistWriter(string folderPath, string youtubeAuthKey, string playlistId, string playlistName)
+        public SingleYoutubePlaylistWriter(string folderPath, string youtubeAuthKey, string playlistId, string playlistName,
+            HttpClient httpClient)
         {
+            _httpClient = httpClient;
             if (playlistName == null)
             {
                 playlistName = playlistId;
@@ -35,11 +35,11 @@ namespace YoutubePlaylistBackup.Core
             _playlistId = playlistId;
             _playlistName = playlistName;
 
-            _newVersionPath = _outputFilePrefix + "YoutubeAutomatedNew.txt";
-            _oldVersionPath = _outputFilePrefix+ "YoutubeAutomated.txt";
-            _diffFilePath = _outputFilePrefix + "YoutubeAutomatedDiff.txt";
-            _diffBackupPath = _outputFilePrefix+ "YoutubeDiffOld.txt";
-            _oldVersionBackupPath = _outputFilePrefix + "YoutubeOldOld.txt";
+            _newVersionPath = _outputFilePrefix + "YoutubeBackupNew.txt";
+            _oldVersionPath = _outputFilePrefix+ "YoutubeBackup.txt";
+            _diffFilePath = _outputFilePrefix + "YoutubeBackupDiff.txt";
+            _diffBackupPath = _outputFilePrefix+ "YoutubeBackupDiffOld.txt";
+            _oldVersionBackupPath = _outputFilePrefix + "YoutubeBackupOld.txt";
         }
 
         public void BackupPlaylist()
@@ -66,40 +66,7 @@ namespace YoutubePlaylistBackup.Core
         private IReadOnlyList<string> RetrieveCurrentPlaylistTitles()
         {
             PrintMsg($"Retrieving {_playlistName} titles from YouTube");
-            var titles = new List<string>();
-            Dictionary<string, object> parsed;
-            object nextPage = null;
-            do
-            {
-                Thread.Sleep(200);
-                string reqUrl = GetRequestUrl((string)nextPage);
-                string res = _httpClient.GetStringAsync(reqUrl).Result;
-
-                parsed = JsonConvert.DeserializeObject<Dictionary<string, object>>(res);
-                var items = (ArrayList)parsed["items"];
-                IList<string> curTitles = items.Cast<Dictionary<string, object>>().Select(item =>
-                {
-                    var snippet = (Dictionary<string, object>)item["snippet"];
-                    return (string)snippet["title"];
-                }).ToList();
-
-                if (titles.Count > 0 && curTitles[0] == titles[titles.Count - 1])
-                {
-                    throw new Exception(
-                        $"YouTube API Error: video title number {titles.Count - 1} is the same as the next one: '{curTitles[0]}'");
-                }
-
-                titles.AddRange(curTitles);
-                Console.Write($"\rRetrieved {titles.Count} titles");
-            } while (parsed.TryGetValue("nextPageToken", out nextPage));
-            Console.WriteLine();
-            return titles;
-        }
-
-        private string GetRequestUrl(string nextPage = null)
-        {
-            string nextPagePart = string.IsNullOrEmpty(nextPage) ? string.Empty : "&pageToken=" + nextPage;
-            return $"{PlaylistAPI}?part=snippet&maxResults=50&playlistId={_playlistId}&key={_youtubeAuthKey}{nextPagePart}";
+            return new YoutubePlaylistTitlesRetriever(_httpClient, _playlistId, _youtubeAuthKey).RetrieveTitles();
         }
 
         private IReadOnlyList<string> GetPlaylistTitlesFromBackup()
@@ -148,7 +115,10 @@ namespace YoutubePlaylistBackup.Core
 
         private void OverrideOldFile()
         {
-            File.Copy(_newVersionPath, _oldVersionPath, true);
+            if (File.Exists(_newVersionPath))
+            {
+                File.Copy(_newVersionPath, _oldVersionPath, true);
+            }            
         }
 
         private void WriteNewTitles(string newVersionPath, IReadOnlyList<string> newTitles)
