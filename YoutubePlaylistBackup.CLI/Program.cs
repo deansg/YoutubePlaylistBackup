@@ -28,7 +28,7 @@ namespace YoutubePlaylistBackup.CLI
             public string PlaylistName { get; set; }
 
             [Option("areNewVideosLast", Default = true, 
-                HelpText = "(Default: true) Whether new videos are added to the end of the playlist (in contrast to the beginning, which is the case for favorites' playlist", 
+                HelpText = "(Default: true) Whether new videos are added to the end of the playlist (in favorites' playlists they are added to the beginning, in regular playlists to the end)", 
                 Required = false)]
             public bool? AreNewVideosLast { get; set; }
         }
