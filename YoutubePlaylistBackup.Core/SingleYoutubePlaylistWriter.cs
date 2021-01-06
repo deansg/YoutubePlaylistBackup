@@ -18,9 +18,10 @@ namespace YoutubePlaylistBackup.Core
         private readonly string _diffFilePath;
         private readonly string _diffBackupPath;
         private readonly string _oldVersionBackupPath;
+        private readonly bool _areNewVideosLast;
 
         public SingleYoutubePlaylistWriter(string folderPath, string youtubeAuthKey, string playlistId,
-            string playlistName, HttpClient httpClient)
+            string playlistName, bool areNewVideosLast, HttpClient httpClient)
         {
             _httpClient = httpClient;
             if (playlistName == null)
@@ -31,6 +32,7 @@ namespace YoutubePlaylistBackup.Core
             _youtubeAuthKey = youtubeAuthKey;
             _playlistId = playlistId;
             _playlistName = playlistName;
+            _areNewVideosLast = areNewVideosLast;
 
             _newVersionPath = _outputFilePrefix + "YoutubeBackupNew.txt";
             _oldVersionPath = _outputFilePrefix + "YoutubeBackup.txt";
@@ -134,14 +136,29 @@ namespace YoutubePlaylistBackup.Core
             PrintMsg("Writing diff file");
             using (var streamWriter = new StreamWriter(_diffFilePath))
             {
-                for (int index = oldTitles.Count - 1; index >= 0; --index)
+                if (_areNewVideosLast)
                 {
-                    string oldTitle = oldTitles[index];
-                    string newTitle = newTitles[index + titlesLengthDiff];
-                    if (oldTitle != newTitle)
+                    for (int index = 0; index < oldTitles.Count; index++)
                     {
-                        streamWriter.WriteLine("{0}. Old: {1}. New: {2}",
-                            index + 1 + titlesLengthDiff, oldTitle, newTitle);
+                        string oldTitle = oldTitles[index];
+                        string newTitle = newTitles[index];
+                        if (oldTitle != newTitle)
+                        {
+                            streamWriter.WriteLine("{0}. Old: {1}. New: {2}", index + 1, oldTitle, newTitle);
+                        }
+                    }
+                }
+                else
+                {
+                    for (int index = oldTitles.Count - 1; index >= 0; --index)
+                    {
+                        string oldTitle = oldTitles[index];
+                        string newTitle = newTitles[index + titlesLengthDiff];
+                        if (oldTitle != newTitle)
+                        {
+                            streamWriter.WriteLine("{0}. Old: {1}. New: {2}",
+                                index + 1 + titlesLengthDiff, oldTitle, newTitle);
+                        }
                     }
                 }
             }

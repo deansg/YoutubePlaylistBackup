@@ -16,9 +16,9 @@ namespace YoutubePlaylistBackup.Core
             _httpClient = httpClient ?? new HttpClient();
         }
 
-        public void BackupPlaylist(string playlistId, string playlistName = null)
+        public void BackupPlaylist(string playlistId, string playlistName = null, bool areNewVideosLast = true)
         {
-            new SingleYoutubePlaylistWriter(_folderPath, _youtubeAuthKey, playlistId, playlistName, _httpClient).BackupPlaylist();
+            new SingleYoutubePlaylistWriter(_folderPath, _youtubeAuthKey, playlistId, playlistName, areNewVideosLast, _httpClient).BackupPlaylist();
         }
 
         public void Dispose()
