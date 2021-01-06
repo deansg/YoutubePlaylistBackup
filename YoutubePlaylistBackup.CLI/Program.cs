@@ -1,4 +1,5 @@
 ﻿using CommandLine;
+using System;
 using YoutubePlaylistBackup.Core;
 
 namespace YoutubePlaylistBackup.CLI
@@ -29,7 +30,7 @@ namespace YoutubePlaylistBackup.CLI
             [Option("areNewVideosLast", Default = true, 
                 HelpText = "(Default: true) Whether new videos are added to the end of the playlist (in contrast to the beginning, which is the case for favorites' playlist", 
                 Required = false)]
-            public bool AreNewVideosLast { get; set; }
+            public bool? AreNewVideosLast { get; set; }
         }
 
         public static void Main(string[] args)
@@ -38,7 +39,7 @@ namespace YoutubePlaylistBackup.CLI
             {
                 using (var writer = new YoutubePlaylistWriter(o.OutputDirPath ?? "", o.YoutubeAuthKey))
                 {
-                    writer.BackupPlaylist(o.PlaylistId, o.PlaylistName);
+                    writer.BackupPlaylist(o.PlaylistId, o.PlaylistName, o.AreNewVideosLast ?? true);
                 }
             });
         }
