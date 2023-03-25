@@ -18,7 +18,7 @@ namespace YoutubePlaylistBackup.CLI
             public string YoutubeAuthKey { get; set; }
 
             [Option("outputDir", Default = null, 
-                HelpText = "(Default: current working directory) The script's output directory", 
+                HelpText = "(Default: current working directory) The script's output directory (must be an existing directory!)", 
                 Required = false)]
             public string OutputDirPath { get; set; }
 
