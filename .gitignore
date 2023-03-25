@@ -338,3 +338,4 @@ ASALocalRun/
 
 # BeatPulse healthcheck temp database
 healthchecksdb
+/YoutubePlaylistBackup.CLI/Properties/launchSettings.json
